@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3-beta.1
+
+- Show the helper version in the window title bar.
+
 ## 0.2.2-beta.1
 
 Initial tracked source release.

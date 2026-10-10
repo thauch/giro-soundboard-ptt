@@ -10,7 +10,7 @@ from tkinter import ttk
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 
-__version__ = '0.2.2-beta.1'
+__version__ = '0.2.3-beta.1'
 
 if os.name != 'nt':
     raise SystemExit('Run this helper on the Windows gaming PC.')
@@ -46,7 +46,7 @@ def key_event(key, up=False):
 
 class Helper:
     def __init__(self):
-        self.root = tk.Tk(); self.root.title("Giro's Soundboard — Push To Talk Helper")
+        self.root = tk.Tk(); self.root.title(f"Giro's Soundboard v{__version__} — Push To Talk Helper")
         self.root.geometry('580x590'); self.root.minsize(520,590); self.root.configure(bg='#0c1118')
         self.stop = threading.Event(); self.held = None; self.mode = 'Off'; self.thread = None
         self.keys = {'Squad':'J','Local':'K'}
