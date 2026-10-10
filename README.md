@@ -1,6 +1,6 @@
 # Windows push-to-talk helper
 
-Version: **0.2.3-beta.1** (Windows/game compatibility pending).
+Version: **0.2.4-beta.1** (Windows/game compatibility pending).
 
 Run on the Windows 10/11 gaming PC, not the Linux soundboard server.
 Install Python 3 with Tkinter, then run:
@@ -29,7 +29,7 @@ This first version pairs again when the helper is restarted.
 ## Build a standalone Windows EXE
 
 Install Python 3 on Windows, then double-click `build-exe.bat`. It creates
-`dist/Giro-Soundboard-PTT.exe`. The finished EXE does not require Python.
+`dist/Giro-Soundboard-PTT-v<version>.exe`. The finished EXE does not require Python.
 The Windows build and game input still need testing on your PC.
 
 ## Automatic GitHub releases
@@ -40,8 +40,8 @@ No extra account token is needed; the workflow uses GitHub's repository token.
 To publish the current version from a checkout:
 
 ```bash
-git tag v0.2.3-beta.1
-git push origin v0.2.3-beta.1
+git tag v0.2.4-beta.1
+git push origin v0.2.4-beta.1
 ```
 
 Alternatively, create and publish a release on GitHub with that tag, targeting
@@ -50,8 +50,6 @@ the EXE appears under the release's Assets when the build succeeds.
 Tags must match VERSION and the Python script's __version__.
 
 Beta versions are prereleases. Their direct EXE download URL is:
-https://github.com/thauch/giro-soundboard-ptt/releases/download/v0.2.3-beta.1/Giro-Soundboard-PTT.exe
+https://github.com/thauch/giro-soundboard-ptt/releases/download/v0.2.4-beta.1/Giro-Soundboard-PTT-v0.2.4-beta.1.exe
 
-For future stable releases, a permanent latest download URL is:
-https://github.com/thauch/giro-soundboard-ptt/releases/latest/download/Giro-Soundboard-PTT.exe
-The latest URL does not select beta prereleases.
+EXE filenames include their release version. Update download links for each release.

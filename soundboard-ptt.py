@@ -10,7 +10,7 @@ from tkinter import ttk
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 
-__version__ = '0.2.3-beta.1'
+__version__ = '0.2.4-beta.1'
 
 if os.name != 'nt':
     raise SystemExit('Run this helper on the Windows gaming PC.')

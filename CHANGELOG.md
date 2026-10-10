@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4-beta.1
+
+- Include the helper version in Windows EXE filenames for local and GitHub builds.
+
 ## 0.2.3-beta.1
 
 - Show the helper version in the window title bar.
