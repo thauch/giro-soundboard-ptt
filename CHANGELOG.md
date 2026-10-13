@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-beta.1
+
+- Replace pairing-code entry with browser-based Discord login.
+- Choose an account-owned host with remote control enabled.
+- Show a top update banner for newer stable or beta GitHub releases.
+
 ## 0.2.4-beta.1
 
 - Include the helper version in Windows EXE filenames for local and GitHub builds.
