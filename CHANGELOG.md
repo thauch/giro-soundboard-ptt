@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- Promote the tested 0.3.2 beta to a stable release after successful Windows use.
+- Remove the beta suffix from the helper title and EXE filename.
+
 ## 0.3.2-beta.1
 
 - Keep sign-in clickable to reopen a prematurely closed browser login page.

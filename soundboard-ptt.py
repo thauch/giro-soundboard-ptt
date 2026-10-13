@@ -16,7 +16,7 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from urllib.parse import urlparse, quote
 
-__version__ = '0.3.2-beta.1'
+__version__ = '0.3.2'
 
 if os.name != 'nt':
     raise SystemExit('Run this helper on the Windows gaming PC.')
