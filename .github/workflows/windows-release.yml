@@ -32,6 +32,8 @@ jobs:
           $version = (Get-Content VERSION -Raw).Trim()
           if ($env:RELEASE_TAG -ne "v$version") { throw "Tag must match VERSION: v$version" }
           python -c "import ast, pathlib; p = pathlib.Path('soundboard-ptt.py'); tree = ast.parse(p.read_text()); version = next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == '__version__' for t in n.targets)); assert version == pathlib.Path('VERSION').read_text().strip()"
+      - name: Verify helper login behavior on Windows
+        run: python -m unittest test_helper.py
       - name: Build standalone EXE
         shell: pwsh
         run: |

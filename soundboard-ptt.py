@@ -3,6 +3,8 @@ import ctypes
 from ctypes import wintypes
 import json
 import os
+import base64
+from pathlib import Path
 import re
 import webbrowser
 from queue import Queue, Empty
@@ -14,7 +16,7 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from urllib.parse import urlparse, quote
 
-__version__ = '0.3.1-beta.1'
+__version__ = '0.3.2-beta.1'
 
 if os.name != 'nt':
     raise SystemExit('Run this helper on the Windows gaming PC.')
@@ -48,13 +50,36 @@ def key_event(key, up=False):
     if user32.SendInput(1, ctypes.byref(event), ctypes.sizeof(INPUT)) != 1:
         raise RuntimeError('Windows rejected the keypress. Check game/helper privileges.')
 
+class DATA_BLOB(ctypes.Structure):
+    _fields_ = [('size', wintypes.DWORD), ('data', ctypes.POINTER(ctypes.c_ubyte))]
+
+def protect_login(data, decrypt=False):
+    """Windows DPAPI binds the saved credential to the current Windows user."""
+    buffer = ctypes.create_string_buffer(data)
+    source = DATA_BLOB(len(data), ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ubyte)))
+    result = DATA_BLOB()
+    crypt32 = ctypes.WinDLL('crypt32', use_last_error=True)
+    operation = crypt32.CryptUnprotectData if decrypt else crypt32.CryptProtectData
+    operation.argtypes = [ctypes.POINTER(DATA_BLOB), ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(DATA_BLOB)]
+    operation.restype = wintypes.BOOL
+    if not operation(ctypes.byref(source), None, None, None, None, 1, ctypes.byref(result)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try: return ctypes.string_at(result.data, result.size)
+    finally:
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+        kernel32.LocalFree.restype = ctypes.c_void_p
+        kernel32.LocalFree(result.data)
+
 class Helper:
     def __init__(self):
         self.root = tk.Tk(); self.root.title(f"Giro's Soundboard v{__version__} — Push To Talk Helper")
         self.root.geometry('580x740'); self.root.minsize(520,740); self.root.configure(bg='#0c1118')
-        self.stop = threading.Event(); self.held = None; self.mode = 'Off'; self.thread = None
+        self.stop = threading.Event(); self.held = None; self.mode = 'Local'; self.thread = None
         self.keys = {'Squad':'J','Local':'K'}
-        self.token = None; self.base = None; self.devices = []; self.busy = False
+        self.token = None; self.base = None; self.devices = []; self.busy = False; self.login_path = None; self.login_generation = 0
+        self.login_cancel = threading.Event()
+        self.login_file = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'GiroSoundboard' / 'helper-login.json'
         self.status = tk.StringVar(value='Sign in with Discord, then choose a remote-enabled host.')
         style = ttk.Style(self.root); style.theme_use('clam')
         style.configure('.', font=('Segoe UI',10), background='#141c27', foreground='#e8eef5')
@@ -90,12 +115,13 @@ class Helper:
         for entry in [self.squad_key,self.local_key]: entry.bind('<FocusOut>',lambda _:self.change_mode());entry.bind('<Return>',lambda _:self.change_mode())
         ttk.Label(frame,text='Letters, Numbers, F1–F24, Space, Ctrl, Shift, Alt').pack(anchor='w',pady=(0,8))
         ttk.Label(frame, text='Choose where you want it to play').pack(anchor='w', pady=(20,0))
-        self.choice = ttk.Combobox(frame, values=['Off', 'Squad', 'Local'], state='readonly'); self.choice.set('Off'); self.choice.pack(fill='x', pady=8)
+        self.choice = ttk.Combobox(frame, values=['Off', 'Squad', 'Local'], state='readonly'); self.choice.set('Local'); self.choice.pack(fill='x', pady=8)
         self.choice.bind('<<ComboboxSelected>>', lambda _: self.change_mode())
         buttons = ttk.Frame(frame); buttons.pack(fill='x',pady=(8,0))
         self.connect_button = ttk.Button(buttons, text='Connect To Host', command=self.connect); self.connect_button.pack(side='left')
         ttk.Button(buttons, text='Disconnect / Release Key', command=self.disconnect).pack(side='right')
         self.messages = Queue(); self.lock = threading.Lock()
+        self.restore_login()
         threading.Thread(target=self.check_updates, daemon=True).start()
         self.root.after(100, self.tick); self.root.protocol('WM_DELETE_WINDOW', self.close)
     def change_mode(self):
@@ -129,28 +155,64 @@ class Helper:
             raise ValueError('Enter a valid HTTPS address.')
         return base
     def login(self):
-        if self.busy: return
+        if self.busy:
+            if self.login_path: webbrowser.open(self.base + self.login_path)
+            else: self.status.set('Preparing Discord sign-in… click again to reopen the browser.')
+            return
+        self.login_generation += 1
+        self.login_cancel.set(); self.login_cancel = threading.Event(); self.login_path = None
         self.disconnect(); self.token = None; self.devices = []; self.host.set(''); self.host['values'] = []
         try: self.base = self.validated_base()
         except ValueError as error: self.status.set(str(error)); return
-        self.busy = True; self.login_button.state(['disabled'])
+        self.busy = True; self.login_button.configure(text='  Reopen Discord Sign-In')
         self.status.set('Finish Discord sign-in in your browser.')
-        threading.Thread(target=self.login_worker, args=(self.base,), daemon=True).start()
-    def login_worker(self, base):
+        threading.Thread(target=self.login_worker, args=(self.base, self.login_generation, self.login_cancel), daemon=True).start()
+    def login_worker(self, base, generation, cancel):
         try:
             flow = self.request(base, '/api/helper/login/start', body={})
             path = flow['verificationPath']
             if not path.startswith('/auth/discord?'): raise ValueError('Invalid login address.')
+            if cancel.is_set(): return
+            self.login_path = path
             webbrowser.open(base + path)
             for _ in range(300):
+                if cancel.is_set(): return
                 result = self.request(base, '/api/helper/login/poll', body={'request':flow['request'], 'secret':flow['secret']})
                 if result.get('token'):
                     devices = self.request(base, '/api/helper/devices', result['token'])['devices']
-                    self.messages.put(('login', result['token'], devices)); return
-                time.sleep(2)
+                    self.messages.put(('login', generation, base, result['token'], devices)); return
+                if cancel.wait(2): return
             raise ValueError('Discord sign-in timed out. Try again.')
-        except Exception as error: self.messages.put(str(error))
-        finally: self.messages.put(('login_finished',))
+        except Exception as error:
+            if not cancel.is_set(): self.messages.put(('login_error', generation, str(error)))
+        finally: self.messages.put(('login_finished', generation))
+    def save_login(self):
+        try:
+            encrypted = protect_login(json.dumps({'base':self.base, 'token':self.token}).encode())
+            self.login_file.parent.mkdir(parents=True, exist_ok=True)
+            temporary = self.login_file.with_suffix('.tmp')
+            temporary.write_text(json.dumps({'encrypted':base64.b64encode(encrypted).decode()}))
+            temporary.replace(self.login_file)
+        except Exception:
+            self.status.set('Signed in, but Windows could not save the login. Sign in again after reopening.')
+    def restore_login(self):
+        try:
+            saved = json.loads(protect_login(base64.b64decode(json.loads(self.login_file.read_text())['encrypted']), decrypt=True))
+            base, token = saved['base'], saved['token']
+            parsed = urlparse(base)
+            if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment or not re.fullmatch(r'[a-f0-9]{64}', token): return
+            self.url.delete(0, 'end'); self.url.insert(0, base)
+            self.status.set('Restoring saved Discord login…')
+            generation = self.login_generation
+            def restore():
+                try:
+                    devices = self.request(base, '/api/helper/devices', token)['devices']
+                    self.messages.put(('login', generation, base, token, devices))
+                except Exception:
+                    self.messages.put(('login_error', generation, 'Saved login unavailable. Click Sign In With Discord to reconnect.'))
+            threading.Thread(target=restore, daemon=True).start()
+        except FileNotFoundError: pass
+        except Exception: self.status.set('Saved login could not be read. Sign in with Discord again.')
     def refresh_hosts(self):
         if not self.token: self.status.set('Sign in with Discord first.'); return
         def refresh():
@@ -226,9 +288,15 @@ class Helper:
             try: message = self.messages.get_nowait()
             except Empty: break
             if isinstance(message, tuple):
-                if message[0] == 'login': self.token = message[1]; self.set_devices(message[2])
+                if message[0] == 'login':
+                    if message[1] != self.login_generation: continue
+                    self.base = message[2]; self.token = message[3]; self.set_devices(message[4]); self.save_login()
+                elif message[0] == 'login_error':
+                    if message[1] == self.login_generation: self.status.set(message[2])
                 elif message[0] == 'devices': self.set_devices(message[1])
-                elif message[0] == 'login_finished': self.busy = False; self.login_button.state(['!disabled'])
+                elif message[0] == 'login_finished':
+                    if message[1] == self.login_generation:
+                        self.busy = False; self.login_path = None; self.login_button.configure(text='  Sign In With Discord')
                 elif message[0] == 'update':
                     self.release_url = message[2]; self.update_banner.configure(text='Update available: ' + message[1] + ' — View release'); self.update_banner.pack(before=self.update_banner.master.winfo_children()[1], fill='x', pady=(0,12))
                 continue
@@ -240,7 +308,7 @@ class Helper:
             self.root_update_due = float('inf'); threading.Thread(target=self.check_updates, daemon=True).start()
         self.root.after(100, self.tick)
     def close(self):
-        self.disconnect(); self.root.destroy()
+        self.login_cancel.set(); self.disconnect(); self.root.destroy()
     def run(self): self.root.mainloop()
 
 if __name__ == '__main__': Helper().run()

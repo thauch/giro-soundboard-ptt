@@ -1,6 +1,6 @@
 # Windows push-to-talk helper
 
-Version: **0.3.1-beta.1** (Windows/game compatibility pending).
+Version: **0.3.2-beta.1** (Windows/game compatibility pending).
 
 Run on the Windows 10/11 gaming PC, not the Linux soundboard server.
 Install Python 3 with Tkinter, then run:
@@ -26,7 +26,10 @@ the helper may require matching privileges. It does not bypass game protections.
 Audio onset is detected through polling, so a very short clip may finish before
 PTT engages and the start of a clip may be clipped. A connection error releases
 the key after the request timeout (up to four seconds across two requests).
-Sign in again when the helper or soundboard server restarts. Native login expires
+The helper restores your login when reopened. Windows DPAPI encrypts the saved
+credential for your Windows user. Click Reopen Discord Sign-In if you close the
+browser before finishing login. Local is the default PTT selection.
+Sign in again if the soundboard server restarts or the saved login expires. Native login expires
 after 30 days and grants only host discovery and read-only playback status.
 
 A banner at the top links to a newer GitHub release when available, including
@@ -46,8 +49,8 @@ No extra account token is needed; the workflow uses GitHub's repository token.
 To publish the current version from a checkout:
 
 ```bash
-git tag v0.3.1-beta.1
-git push origin v0.3.1-beta.1
+git tag v0.3.2-beta.1
+git push origin v0.3.2-beta.1
 ```
 
 Alternatively, create and publish a release on GitHub with that tag, targeting
@@ -56,6 +59,6 @@ the EXE appears under the release's Assets when the build succeeds.
 Tags must match VERSION and the Python script's __version__.
 
 Beta versions are prereleases. Their direct EXE download URL is:
-https://github.com/thauch/giro-soundboard-ptt/releases/download/v0.3.1-beta.1/Giro-Soundboard-PTT-v0.3.1-beta.1.exe
+https://github.com/thauch/giro-soundboard-ptt/releases/download/v0.3.2-beta.1/Giro-Soundboard-PTT-v0.3.2-beta.1.exe
 
 EXE filenames include their release version. Update download links for each release.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2-beta.1
+
+- Keep sign-in clickable to reopen a prematurely closed browser login page.
+- Default push-to-talk selection to Local.
+- Encrypt login using Windows DPAPI and restore it when the helper reopens.
+
 ## 0.3.1-beta.1
 
 - Select the first online host after Discord login; preserve an online selection on refresh.
