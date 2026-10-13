@@ -1,6 +1,6 @@
 # Windows push-to-talk helper
 
-Version: **0.3.0-beta.1** (Windows/game compatibility pending).
+Version: **0.3.1-beta.1** (Windows/game compatibility pending).
 
 Run on the Windows 10/11 gaming PC, not the Linux soundboard server.
 Install Python 3 with Tkinter, then run:
@@ -12,7 +12,7 @@ py soundboard-ptt.py
 On the host soundboard, sign in with Discord and enable Remote control.
 Enter the soundboard HTTPS address in the helper and click Sign In With Discord.
 Complete login in your browser using the same account, then choose your host
-computer and click Connect To Host. Refresh Hosts updates the online status.
+computer and click Connect To Host. The first online host is selected automatically. Refresh Hosts updates the online status.
 Enter your Squad and Local keys (J and K by default), then choose Squad, Local, or Off. Single letters, digits, F1–F24, and named keys are supported; key combinations are not. Local sounds, TTS, and history replays
 on that selected host browser hold the selected key. Remote-triggered Local audio is
 included. Discord bot playback does not press a key.
@@ -46,8 +46,8 @@ No extra account token is needed; the workflow uses GitHub's repository token.
 To publish the current version from a checkout:
 
 ```bash
-git tag v0.3.0-beta.1
-git push origin v0.3.0-beta.1
+git tag v0.3.1-beta.1
+git push origin v0.3.1-beta.1
 ```
 
 Alternatively, create and publish a release on GitHub with that tag, targeting
@@ -56,6 +56,6 @@ the EXE appears under the release's Assets when the build succeeds.
 Tags must match VERSION and the Python script's __version__.
 
 Beta versions are prereleases. Their direct EXE download URL is:
-https://github.com/thauch/giro-soundboard-ptt/releases/download/v0.3.0-beta.1/Giro-Soundboard-PTT-v0.3.0-beta.1.exe
+https://github.com/thauch/giro-soundboard-ptt/releases/download/v0.3.1-beta.1/Giro-Soundboard-PTT-v0.3.1-beta.1.exe
 
 EXE filenames include their release version. Update download links for each release.

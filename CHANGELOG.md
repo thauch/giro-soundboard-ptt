@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1-beta.1
+
+- Select the first online host after Discord login; preserve an online selection on refresh.
+- Add space and a destination label above Off / Squad / Local.
+- Include a Discord icon inside the sign-in button.
+
 ## 0.3.0-beta.1
 
 - Replace pairing-code entry with browser-based Discord login.

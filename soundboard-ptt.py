@@ -14,7 +14,7 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from urllib.parse import urlparse, quote
 
-__version__ = '0.3.0-beta.1'
+__version__ = '0.3.1-beta.1'
 
 if os.name != 'nt':
     raise SystemExit('Run this helper on the Windows gaming PC.')
@@ -75,7 +75,8 @@ class Helper:
         ttk.Label(frame, text='Soundboard HTTPS Address').pack(anchor='w')
         self.url = ttk.Entry(frame); self.url.insert(0, 'https://dirtydeedsgaming.com:8443'); self.url.pack(fill='x', pady=(5,12))
         login_buttons = ttk.Frame(frame); login_buttons.pack(fill='x', pady=(0,12))
-        self.login_button = ttk.Button(login_buttons, text='Sign In With Discord', command=self.login); self.login_button.pack(side='left')
+        self.discord_icon = tk.BitmapImage(data='#define discord_width 24\n#define discord_height 18\nstatic unsigned char discord_bits[] = { 0x00, 0x00, 0x00, 0xc0, 0x80, 0x03, 0xe0, 0xc3, 0x07, 0xf0, 0xff, 0x0f, 0xf8, 0xff, 0x1f, 0xf8, 0xff, 0x1f, 0xf8, 0xff, 0x1f, 0xfc, 0xfe, 0x3e, 0x7c, 0x7c, 0x3c, 0x7c, 0x7c, 0x3c, 0x7c, 0x7c, 0x3c, 0xfe, 0xfe, 0x7e, 0xfe, 0xff, 0x7f, 0xfe, 0xff, 0x7f, 0x7c, 0x00, 0x3e, 0xf8, 0x00, 0x1f, 0x30, 0x00, 0x0e, 0x00, 0x00, 0x00 };', foreground='#e8eef5')
+        self.login_button = ttk.Button(login_buttons, text='  Sign In With Discord', image=self.discord_icon, compound='left', command=self.login); self.login_button.pack(side='left')
         ttk.Button(login_buttons, text='Refresh Hosts', command=self.refresh_hosts).pack(side='right')
         ttk.Label(frame, text='Host Computer (Remote Control Enabled)').pack(anchor='w')
         self.host = ttk.Combobox(frame, state='readonly'); self.host.pack(fill='x', pady=(5,12))
@@ -88,6 +89,7 @@ class Helper:
         self.local_key=ttk.Entry(keyframe);self.local_key.insert(0,'K');self.local_key.grid(row=1,column=1,sticky='ew',padx=(12,0),pady=5)
         for entry in [self.squad_key,self.local_key]: entry.bind('<FocusOut>',lambda _:self.change_mode());entry.bind('<Return>',lambda _:self.change_mode())
         ttk.Label(frame,text='Letters, Numbers, F1–F24, Space, Ctrl, Shift, Alt').pack(anchor='w',pady=(0,8))
+        ttk.Label(frame, text='Choose where you want it to play').pack(anchor='w', pady=(20,0))
         self.choice = ttk.Combobox(frame, values=['Off', 'Squad', 'Local'], state='readonly'); self.choice.set('Off'); self.choice.pack(fill='x', pady=8)
         self.choice.bind('<<ComboboxSelected>>', lambda _: self.change_mode())
         buttons = ttk.Frame(frame); buttons.pack(fill='x',pady=(8,0))
@@ -161,9 +163,11 @@ class Helper:
         self.devices = devices
         self.host['values'] = [d['name'] + (' — online' if d['online'] else ' — offline') for d in devices]
         self.host.set('')
-        for index, device in enumerate(devices):
-            if device['id'] == previous: self.host.current(index)
-        self.status.set('Choose a host and click Connect.' if devices else 'No hosts found. Sign in on the host and enable Remote control.')
+        selected = next((index for index, device in enumerate(devices) if device['id'] == previous and device['online']), None)
+        if selected is None:
+            selected = next((index for index, device in enumerate(devices) if device['online']), 0 if devices else None)
+        if selected is not None: self.host.current(selected)
+        self.status.set(('Host selected — click Connect To Host.' if devices[selected]['online'] else 'Hosts offline. Enable Remote control on the host and refresh.') if devices else 'No hosts found. Sign in on the host and enable Remote control.')
     def check_updates(self):
         try:
             req = Request('https://api.github.com/repos/thauch/giro-soundboard-ptt/releases?per_page=100', headers={'User-Agent':'Giro-Soundboard-PTT', 'Accept':'application/vnd.github+json'})
